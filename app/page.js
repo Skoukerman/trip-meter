@@ -11,12 +11,13 @@ const calculateDistance = (pos1, pos2) => {
   const φ2 = (pos2.latitude * Math.PI) / 180;
   const Δφ = ((pos2.latitude - pos1.latitude) * Math.PI) / 180;
   const Δλ = ((pos2.longitude - pos1.longitude) * Math.PI) / 180;
-
+  
   const a =
-    Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-    Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+  Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+  Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
+  
+  console.log("dis calculation", R*c);
   return R * c;
 };
 
@@ -32,56 +33,61 @@ const formatDistance = (meters) => {
   }
 };
 
+
 export default function Home() {
-
-
-  const [location, setLocation] = useState();
-  useEffect(() => {
-        if('geolocation' in navigator) {
-            // Retrieve latitude & longitude coordinates from `navigator.geolocation` Web API
-            navigator.geolocation.getCurrentPosition(({ coords }) => {
-                const { latitude, longitude } = coords;
-                setLocation({ latitude, longitude });
-                console.log(coords);
-            })
-        }
-  }, []);
   
   
+  const [location, setLocation] = useState({});
+  const [currentPosition, setCurrentPosition] = useState({});
+  const [isTracking, setIsTracking] = useState(false);
+  const [hasLocationPermission, setHasLocationPermission] = useState(false);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
+  const [lastGpsUpdate, setLastGpsUpdate] = useState(0);
+  const [lastCalculatedDistance, setLastCalculatedDistance] = useState(0);
+  const [isTabVisible, setIsTabVisible] = useState(true);
+  const [error, setError] = useState("");
+  
+const startTracking = async () =>{
 
+  setTotalDistance(0)
+  var deltaPosition = {}
+  //check permission
 
-  useEffect(() => {
-    // Track tab visibility for GPS debugging
-    const handleVisibilityChange = () => {
-      setIsTabVisible(!document.hidden);
+  if('geolocation' in navigator) {
+      // Retrieve latitude & longitude coordinates from `navigator.geolocation` Web API
+      navigator.geolocation.getCurrentPosition((position) => {
+        deltaPosition = {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude
+        };
+      setLocation({...location, latitude: position.coords.latitude, longitude: position.coords.longitude});
+    })
+  }
+
+  //setIsTracking(true)
+
+  navigator.geolocation.watchPosition((position) => {
+    const newPosition = {
+      latitude: position.coords.latitude,
+      longitude: position.coords.longitude
     };
+    setCurrentPosition({...currentPosition, latitude: position.coords.latitude, longitude: position.coords.longitude});
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    // Check for existing location permission on app load
-    const checkExistingPermission = async () => {
-      if ("permissions" in navigator) {
-        try {
-          const permission = await navigator.permissions.query({
-            name: "geolocation",
-          });
-          if (permission.state === "granted") {
-            setHasLocationPermission(true);
-          }
-        } catch {
-          // Permission API not available, no action needed
-        }
-      }
-    };
     
-    checkExistingPermission();
-  }, []);
-  
-  
-  
+    if(deltaPosition){
+      const distance = calculateDistance(deltaPosition,newPosition);
 
+      if (distance > 2){//don't need small distances
+        setTotalDistance((dis) => dis + distance);
+        deltaPosition = newPosition;
+      }
+    }
+  })
+}
+  
   return (
-    <div className={styles.page}>
+    <div className={styles.page}>      
       <main className={styles.main}>
         <Image
           className={styles.logo}
@@ -125,48 +131,34 @@ export default function Home() {
         </div>
       </main>
       <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+        {/* Control Buttons */}
+        <div className="space-y-4 shrink-0">
+          {!isTracking ? (
+            <button
+              className="btn btn-success btn-lg w-full text-xl h-20 flex items-center justify-center gap-3 text-success-content"
+              onClick={startTracking}
+            >
+              Start
+            </button>
+          ) : (
+            <div className="space-y-3">
+              <button
+                className="btn btn-info btn-lg w-full text-xl h-16 flex items-center justify-center gap-3 text-info-content"
+                //onClick={recordLap}
+              >
+                Lap
+              </button>
+              <button
+                className="btn btn-error btn-lg w-full text-xl h-16 flex items-center justify-center gap-3 text-error-content"
+                //onClick={stopTracking}
+              >
+                Stop
+              </button>
+            </div>
+          )}
+        </div>
+        
       </footer>
     </div>
   );
