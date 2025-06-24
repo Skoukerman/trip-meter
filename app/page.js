@@ -45,10 +45,11 @@ export default function Home() {
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [error, setError] = useState("");
   const watchIdRef = useRef (null);
+  const deltaPositionRef = useRef (null);
 
   useEffect(() => {
     // Check for saved theme preference
-    const savedTheme = localStorage.getItem("odom-theme");
+    const savedTheme = localStorage.getItem("app-theme");
     if (savedTheme === "dark") {
       setIsDarkMode(true);
       document.documentElement.setAttribute("data-theme", "dark");
@@ -57,12 +58,13 @@ export default function Home() {
 
   const startTracking = async () => {
     setTotalDistance(0);
-    let deltaPosition = {};
+    setSectorDistance(0);
+    setPrevDistance(0);
 
     if ("geolocation" in navigator) {
       // Retrieve latitude & longitude coordinates from `navigator.geolocation` Web API
       navigator.geolocation.getCurrentPosition((position) => {
-        deltaPosition = {
+        deltaPositionRef.current = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
@@ -76,13 +78,13 @@ export default function Home() {
           longitude: position.coords.longitude,
         };
         
-        if (deltaPosition) {
-          const distance = calculateDistance(deltaPosition, newPosition);
+        if (deltaPositionRef.current) {
+          const distance = calculateDistance(deltaPositionRef.current, newPosition);
           console.log(watchIdRef.current);
           
           if (distance > 10 || (distance > 1 && totalDistance > 2)) {//don't need small distances
             setTotalDistance((dis) => dis + distance);
-            deltaPosition = newPosition;
+            deltaPositionRef.current = newPosition;
           }
         }
       });
@@ -108,45 +110,50 @@ export default function Home() {
     setIsDarkMode(newTheme);
     const theme = newTheme ? "dark" : "light";
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("odom-theme", theme);
+    localStorage.setItem("app-theme", theme);
   };
 
   return (
     <div className={styles.page}>
-      <header className="header">
-        <button
-            className="btn back"
-            //href = todo
-          >
-          /-
-          </button>
+      <header className={`${styles.wrapper} container `}>
+        <aside>
+
           <button
-            className="btn theme"
+            className="btn-back"
+            //href = todo
+            >
+            &lt;
+          </button>
+        </aside>
+        <aside>
+          <button
+            className="btn-theme"
             onClick={toggleTheme}
             aria-label="Toggle theme"
-          >
+            >
             {isDarkMode ? (
-              <div/>
+              <Image src="/moon.png" alt="Moon icon" width={32} height={32}/>
             ) : (
-              <div/>
+              <Image src="/sun.png" alt="Sun icon" width={35} height={35}/>
             )}
           </button>
+        </aside>
       </header>
       <main className={styles.main}>
 
         <div>
           {/* Stats Display */}
           <div>
-            <div>
+            <div className="stats-label">
               Total Distance
             </div>
-            <div>
+            <div className="stats-value">
               {formatDistance(totalDistance)}
             </div>
-            <div>
+            <div className="stats-label">
               Checkpoint Distance
             </div>
-            <div>
+            <div className="stats-value">
               {formatDistance(sectorDistance)}
             </div>
           </div>
@@ -158,22 +165,23 @@ export default function Home() {
         <div>
           {!isTracking ? (
             <button
-              className="btn"
+              className="btn-start"
               onClick={startTracking}
             >
               Start
             </button>
           ) : (
             <button
-              className="btn"
+              className="btn-stop"
               onClick={stopTracking}
             >
               Stop
             </button>
           )}
           <button
-            className="btn"
+            className="btn-checkpoint"
             onClick={checkpoint}
+            disabled={!isTracking}
           >
             Checkpoint
           </button>
