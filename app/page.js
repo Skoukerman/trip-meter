@@ -39,13 +39,13 @@ export default function Home() {
   const [isTracking, setIsTracking] = useState(false);
   const [hasLocationPermission, setHasLocationPermission] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [totalDistance, setTotalDistance] = useState(0);
   const [prevDistance, setPrevDistance] = useState(0);
+  const [totalDistance, setTotalDistance] = useState(0);
   const [sectorDistance, setSectorDistance] = useState(0);
   const [isTabVisible, setIsTabVisible] = useState(true);
   const [error, setError] = useState("");
   const watchIdRef = useRef (null);
-  const deltaPositionRef = useRef (null);
+  const totalDistanceRef = useRef(0);
 
   useEffect(() => {
     // Check for saved theme preference
@@ -57,14 +57,16 @@ export default function Home() {
   }, []);
 
   const startTracking = async () => {
+    totalDistanceRef.current = 0;
     setTotalDistance(0);
     setSectorDistance(0);
     setPrevDistance(0);
+    let deltaPosition = {};
 
     if ("geolocation" in navigator) {
       // Retrieve latitude & longitude coordinates from `navigator.geolocation` Web API
       navigator.geolocation.getCurrentPosition((position) => {
-        deltaPositionRef.current = {
+        deltaPosition = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
@@ -78,13 +80,13 @@ export default function Home() {
           longitude: position.coords.longitude,
         };
         
-        if (deltaPositionRef.current) {
-          const distance = calculateDistance(deltaPositionRef.current, newPosition);
-          console.log(watchIdRef.current);
+        if (deltaPosition && deltaPosition.latitude) {
+          const distance = calculateDistance(deltaPosition, newPosition);
           
-          if (distance > 10 || (distance > 1 && totalDistance > 2)) {//don't need small distances
-            setTotalDistance((dis) => dis + distance);
-            deltaPositionRef.current = newPosition;
+          if (distance > 10 || (distance > 4 && totalDistanceRef.current > 2)) {//don't need small distances
+            totalDistanceRef.current += distance;  //unfortunate need to use ref to check total distance as setTotalDistance does not update
+            setTotalDistance(totalDistanceRef.current);
+            deltaPosition = newPosition;
           }
         }
       });
@@ -95,7 +97,6 @@ export default function Home() {
     
     setSectorDistance(totalDistance - prevDistance);
     setPrevDistance(totalDistance);
-    console.log(sectorDistance);
   };
 
   const stopTracking = async () =>{
