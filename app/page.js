@@ -46,6 +46,7 @@ export default function Home() {
   const [error, setError] = useState("");
   const watchIdRef = useRef (null);
   const totalDistanceRef = useRef(0);
+  const deltaPositionRef = useRef({});
 
   useEffect(() => {
     // Check for saved theme preference
@@ -58,38 +59,39 @@ export default function Home() {
 
   const startTracking = async () => {
     totalDistanceRef.current = 0;
+    deltaPositionRef.current = null;
     setTotalDistance(0);
     setSectorDistance(0);
     setPrevDistance(0);
-    let deltaPosition = {};
 
     if ("geolocation" in navigator) {
-      // Retrieve latitude & longitude coordinates from `navigator.geolocation` Web API
-      navigator.geolocation.getCurrentPosition((position) => {
-        deltaPosition = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-      });
-    }
-
-    setIsTracking(true)
-      watchIdRef.current = navigator.geolocation.watchPosition((position) => {
-        const newPosition = {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        };
-        
-        if (deltaPosition && deltaPosition.latitude) {
-          const distance = calculateDistance(deltaPosition, newPosition);
-          
-          if (distance > 10 || (distance > 4 && totalDistanceRef.current > 2)) {//don't need small distances
-            totalDistanceRef.current += distance;  //unfortunate need to use ref to check total distance as setTotalDistance does not update
-            setTotalDistance(totalDistanceRef.current);
-            deltaPosition = newPosition;
+      setIsTracking(true);
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (position) => {
+          //console.log(deltaPositionRef.current, position.coords.accuracy);
+          if (position.coords.accuracy > 100) {
+            // Ignore inaccurate readings
+            return;
           }
-        }
-      });
+          const newPosition = {
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          };
+          if (!deltaPositionRef.current) {
+            deltaPositionRef.current = newPosition;
+            return;
+          }
+          const distance = calculateDistance(deltaPositionRef.current, newPosition);
+          if (distance > 5) {
+            totalDistanceRef.current += distance;
+            setTotalDistance(totalDistanceRef.current);
+            deltaPositionRef.current = newPosition;
+          }
+        },
+        (err) => setError(err.message),
+        { maximumAge: 0, enableHighAccuracy: true }
+      );
+    }
   };
 
   const checkpoint = async () => {
@@ -101,7 +103,7 @@ export default function Home() {
 
   const stopTracking = async () =>{
     checkpoint();
-    
+    totalDistanceRef.current = 0;
     setIsTracking(false);
     navigator.geolocation.clearWatch(watchIdRef.current);
   }
@@ -121,7 +123,7 @@ export default function Home() {
 
           <button
             className="btn-back"
-            //href = todo
+            //Link todo
             >
             &lt;
           </button>
@@ -133,60 +135,54 @@ export default function Home() {
             aria-label="Toggle theme"
             >
             {isDarkMode ? (
-              <Image src="/moon.png" alt="Moon icon" width={32} height={32}/>
+              <Image src="/moon.png" alt="Moon icon" width={40} height={40}/>
             ) : (
-              <Image src="/sun.png" alt="Sun icon" width={35} height={35}/>
+              <Image src="/sun.png" alt="Sun icon" width={40} height={40}/>
             )}
           </button>
         </aside>
       </header>
       <main className={styles.main}>
-
+        
         <div>
-          {/* Stats Display */}
-          <div>
-            <div className="stats-label">
-              Total Distance
-            </div>
-            <div className="stats-value">
-              {formatDistance(totalDistance)}
-            </div>
-            <div className="stats-label">
-              Checkpoint Distance
-            </div>
-            <div className="stats-value">
-              {formatDistance(sectorDistance)}
-            </div>
+          <div className="stats-label">
+            Total Distance
+          </div>
+          <div className="stats-value">
+            {formatDistance(totalDistance)}
+          </div>
+          <div className="stats-label">
+            Checkpoint Distance
+          </div>
+          <div className="stats-value">
+            {formatDistance(sectorDistance)}
           </div>
         </div>
         
       </main>
       <footer className={styles.footer}>
-        {/* Control Buttons */}
-        <div>
-          {!isTracking ? (
-            <button
-              className="btn-start"
-              onClick={startTracking}
-            >
-              Start
-            </button>
-          ) : (
-            <button
-              className="btn-stop"
-              onClick={stopTracking}
-            >
-              Stop
-            </button>
-          )}
+        {!isTracking ? (
           <button
-            className="btn-checkpoint"
-            onClick={checkpoint}
-            disabled={!isTracking}
+            className="btn-start"
+            onClick={startTracking}
           >
-            Checkpoint
+            <Image src="/start.png" alt="Start icon" width={100} height={100}/>
           </button>
-        </div>
+        ) : (
+          <button
+            className="btn-stop"
+            onClick={stopTracking}
+          >
+            <Image src="/stop.png" alt="Stop icon" width={100} height={100}/>
+          </button>
+        )}
+        <button
+          className="btn-checkpoint"
+          onClick={checkpoint}
+          disabled={!isTracking}
+        >
+          <Image src="/checkpoint.png" alt="Checkpoint icon" width={100} height={100}/>
+        </button>
       </footer>
     </div>
   );
