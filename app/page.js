@@ -22,7 +22,7 @@ const calculateDistance = (pos1, pos2) => {
 
 const formatDistance = (meters) => {
   if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(2)} km`;
+    return `${(meters / 1000).toFixed(2)} Km`;
   } else {
     return `${meters.toFixed(0)} m`;
   }

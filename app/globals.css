@@ -15,7 +15,15 @@
   font-family: 'Ubuntu';
   font-style: normal;
   font-weight: 400;
-  src: local('Ubuntu'), url('/Ubuntu-Regular.ttf') format('truetype');
+  src: local('Ubuntu'), url('/fonts/Ubuntu-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'DigitTech16';
+  src: url('/fonts/DigitTech16-Regular.ttf');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
 }
 
 :root {
@@ -62,7 +70,7 @@ html[data-theme="light"] {
   margin-bottom: 10px;
   color: var(--foreground);
   border-radius: 10px;
-  font-family: 'WRC Clean', sans-serif;
+  font-family: 'DigitTech16', sans-serif;
 }
 
 .stats-label {
