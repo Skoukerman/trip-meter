@@ -17,19 +17,14 @@ const calculateDistance = (pos1, pos2) => {
     Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
-  //console.log("dis calculation", R * c);
   return R * c;
 };
 
 const formatDistance = (meters) => {
   if (meters >= 1000) {
-    return `${(meters / 1000).toFixed(1)} km`;
-  } else if (meters >= 100) {
-    return `${meters.toFixed(0)} m`;
-  } else if (meters >= 10) {
-    return `${meters.toFixed(1)} m`;
+    return `${(meters / 1000).toFixed(2)} km`;
   } else {
-    return `${meters.toFixed(2)} m`;
+    return `${meters.toFixed(0)} m`;
   }
 };
 
